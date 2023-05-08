@@ -14,14 +14,17 @@ async def summarize(input: Text):
 
     response = openai.Completion.create(
         engine="text-davinci-003",
-        prompt= f"아래 문장을 반드시 한국어로 요약해 주세요:\n\n{input.text}\n",
-        max_tokens=1000,
+        prompt= f"Could you please summarize the following sentence in Korean?\n\n{input.text}\n",
+        max_tokens=4096,
         n=1,
         stop=None,
         temperature=0.7,
     )
     summary = response.choices[0].text.strip()
     return {"summary": summary}
+
+
+
 """
 def summarize_large_text(conversations: Conversations,
                          text: str,
