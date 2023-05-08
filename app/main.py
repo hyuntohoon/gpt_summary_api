@@ -11,7 +11,7 @@ def unicode_escape_to_text(escaped_str: str) -> str:
 
 def main():
     class Settings(BaseSettings):
-        OPENAI_API_KEY: str = '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'
+        OPENAI_API_KEY: str = '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'
         class Config:
             env_file = '.env'
 
