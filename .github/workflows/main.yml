@@ -53,5 +53,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Docker run
         run: |
-          sudo docker stop ${{ env.NAME }} && sudo docker rm ${{ env.NAME }} && sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest
+          sudo docker stop ${{ env.NAME }} || true
+          sudo docker rm ${{ env.NAME }} || true
+          sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
           sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always ${{ env.DOCKER_IMAGE }}:latest
