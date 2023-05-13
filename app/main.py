@@ -6,7 +6,7 @@ import openai
 
 
 class Settings(BaseSettings):
-    OPENAI_API_KEY: str = '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'
+    OPENAI_API_KEY: str = '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'
 
 
 settings = Settings()
