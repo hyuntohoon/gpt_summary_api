@@ -3,7 +3,6 @@ FROM python:3.9
 WORKDIR /app
 
 COPY ./app /app
-COPY ./docker-compose.yml /app/docker-compose.yml
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
