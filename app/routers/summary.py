@@ -15,9 +15,7 @@ async def summarize(input: Text):
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt= f"Could you please summarize the following sentence in Korean?\n\n{input.text}\n",
-        max_tokens=4000,
-        n=1,
-        stop=None,
+        max_tokens=256,
         temperature=0.7,
     )
     summary = response.choices[0].text.strip()
