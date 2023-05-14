@@ -1,12 +1,14 @@
 import uvicorn
+import os
 from fastapi import FastAPI
 from pydantic import BaseSettings
 from routers import summary
+
 import openai
 
 
 class Settings(BaseSettings):
-    OPENAI_API_KEY: str = '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'
+    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY')
 
 
 settings = Settings()
