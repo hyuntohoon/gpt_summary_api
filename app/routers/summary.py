@@ -16,7 +16,7 @@ async def summarize(input: Text):
         engine="text-davinci-003",
         prompt= f"Could you please summarize the following sentence in Korean?\n\n{input.text}\n",
         max_tokens=2000,
-        temperature=0.7,
+        temperature=0.3,
     )
     summary = response.choices[0].text.strip()
     return {"summary": summary}
