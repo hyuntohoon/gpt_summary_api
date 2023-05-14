@@ -41,6 +41,8 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE }}:latest
           build-args: |
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   deploy:
     needs: build
