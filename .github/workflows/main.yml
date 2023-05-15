@@ -70,4 +70,4 @@ jobs:
           sudo docker stop ${{ env.NAME }} || true
           sudo docker rm ${{ env.NAME }} || true
           sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
-          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always ${{ env.DOCKER_IMAGE }}:latest
+          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.DOCKER_IMAGE }}:latest
