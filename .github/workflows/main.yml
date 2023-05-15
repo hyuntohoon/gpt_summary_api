@@ -1,24 +1,32 @@
+# 도커 이름
 name: CI/CD Docker
-
+# 이벤트 트리거, main에 push 할 때마다
 on:
   push:
     branches: [ main ]
-
+# 개발 환경 설정
 env:
+# 도커 이미지는 해당 리퍼짓토리에서 가져온다.
   DOCKER_IMAGE: ghcr.io/${{ github.actor }}/gptsummaryapi
   VERSION: ${{ github.sha }}
   NAME: fastapi_cicd
-
+# 이후 작업을 나열
 jobs:
+# build 작업
   build:
     name: Build
+    #  GitHub Actions에서 제공하는 Ubuntu 운영 체제의 최신 버전
     runs-on: ubuntu-latest
+    # 해당 build 단계
     steps:
+    # action 가져오기 => 이미 완성된 함수를 재사용
+    # checkout@v2
       - uses: actions/checkout@v2
       - name: Set up docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
       - name: Cache docker layers
+    # actions/cache@v2
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
@@ -26,6 +34,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
       - name: Login to ghcr
+      # docker/login-action@v1
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -33,6 +42,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push
         id: docker_build
+      # docker/build-push-action@v2
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -43,7 +53,7 @@ jobs:
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
+# Deploy 작업
   deploy:
     needs: build
     name: Deploy
