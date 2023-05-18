@@ -1,24 +1,40 @@
+# 도커 이름
 name: CI/CD Docker
-
+# 이벤트 트리거, main에 push 할 때마다
 on:
   push:
     branches: [ main ]
-
+# 개발 환경 설정
 env:
+# 도커 이미지는 해당 리퍼짓토리에서 가져온다.
   DOCKER_IMAGE: ghcr.io/${{ github.actor }}/gptsummaryapi
   VERSION: ${{ github.sha }}
   NAME: fastapi_cicd
-
+# 이후 작업을 나열
 jobs:
+# build 작업
   build:
     name: Build
+    #  GitHub Actions에서 제공하는 Ubuntu 운영 체제의 최신 버전
     runs-on: ubuntu-latest
+    # 해당 build 단계
     steps:
+    # action 가져오기 => 이미 완성된 함수를 재사용
+    # checkout@v2
+    # 현재 레포지토리의 코드를 워크스페이스에 체크아웃한다.
+    # 이는 워크플로우가 실행되는 환경에서 코드를 사용할 수 있도록 한다.
       - uses: actions/checkout@v2
       - name: Set up docker buildx
         id: buildx
+    # setup-buildx-action@v1
+    # Docker Buildx 플러그인을 설정하고 사용할 수 있도록 환경을 설정한다. 
+    # Buildx는 Docker 이미지를 빌드하고 관리하는 데 사용되는 확장 도구이다.
         uses: docker/setup-buildx-action@v1
       - name: Cache docker layers
+    # actions/cache@v2
+    # Docker 레이어를 캐시하여 이전에 빌드된 이미지 레이어를 재사용한다.
+    # 캐시는 빌드 속도를 향상시키고 중복 다운로드를 방지한다.
+
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
@@ -26,6 +42,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
       - name: Login to ghcr
+      # docker/login-action@v1
+
+      # GitHub Container Registry (ghcr.io)에 로그인한다.
+      # 이 작업은 Docker 이미지를 푸시하기 위해 레지스트리에 인증하는 데 사용된다.
+      # GitHub Actions에서 제공되는 GITHUB_TOKEN을 사용하여 인증합니다.
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -33,6 +54,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push
         id: docker_build
+      # docker/build-push-action@v2
+      # Docker 이미지를 빌드하고 레지스트리에 푸시한다.
+      # 이 작업은 Dockerfile을 기반으로 Docker 이미지를 빌드하고, 빌드된 이미지를 지정된 레지스트리에 푸시
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -41,7 +65,9 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE }}:latest
           build-args: |
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+# Deploy 작업
   deploy:
     needs: build
     name: Deploy
@@ -55,7 +81,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Docker run
         run: |
+          # 현재 동작 중인 컨테이너를 중지합니다. 중지에 실패하더라도 에러를 발생시키지 않습니다.
           sudo docker stop ${{ env.NAME }} || true
+          # 이전에 실행 중이던 컨테이너를 제거한다.
           sudo docker rm ${{ env.NAME }} || true
+          # 이전에 빌드된 이미지를 제거한다.
           sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
-          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always ${{ env.DOCKER_IMAGE }}:latest
+          # 새로운 컨테이너를 실행합니다. 포트는 8000:8--, 설정된 OPENAI_API_KEY를 셋하여 해동 도커 이미지를 통해 컨테이너를 실행한다.
+          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.DOCKER_IMAGE }}:latest
