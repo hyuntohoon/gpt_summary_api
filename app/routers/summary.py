@@ -1,48 +1,49 @@
 import textwrap
+from typing import List
 from fastapi import APIRouter
+
 import openai
 from pydantic import BaseModel
 
 
-class Text(BaseModel):
-    text: str
+class SummarizeInput(BaseModel):
+    text: List[str]
+    max_summarize_chars: int = 9000
+    max_chars_per_request: int = 4000
+    summary_length: int = 1000
+
+
 router = APIRouter()
 
 
-@router.post("/summarize")
-async def summarize(input: Text):
-
+async def generate_summary(text: str, max_length: int = 1000):
     response = openai.Completion.create(
         engine="text-davinci-003",
-        prompt= f"Could you please summarize the following sentence in Korean?\n\n{input.text}\n",
+        prompt= f"Could you please summarize the following sentence in Korean?\n\n{text}\n",
         max_tokens=2000,
-        temperature=0.3,
+        temperature=0.7,
     )
     summary = response.choices[0].text.strip()
-    return {"summary": summary}
+    return summary
 
 
+@router.post("/summarize_large_text")
+async def summarize_large_text(input_data: SummarizeInput):
+    text = input_data.text # 텍스트 가져오기 리스트
+    max_summarize_chars = input_data.max_summarize_chars
+    max_chars_per_request = input_data.max_chars_per_request
+    summary_length = input_data.summary_length
+    final_summary_texts = []
 
-"""
-def summarize_large_text(conversations: Conversations,
-                         text: str,
-                         max_summarize_chars: int = 9000,
-                         max_chars_per_request: int = 4000,
-                         summary_length: int = 1000) -> Conversations:
+    for text_chunk in text:
+        wrapped_text = textwrap.wrap(text_chunk, max_chars_per_request)
+        length = max_summarize_chars // max_chars_per_request
+        wrapped_text = wrapped_text[:length]
+        summary_chunks = []
+        for sub_chunk in enumerate(wrapped_text):
+            summarized_text = await generate_summary(sub_chunk, summary_length)
+            summary_chunks.append(summarized_text)
+        final_summary_texts.append(summary_chunks)
 
+    return {"summary": final_summary_texts}
 
-    wrapped_text = textwrap.wrap(text, max_chars_per_request)
-    length =  max_summarize_chars // max_chars_per_request
-    wrapped_text = wrapped_text[:length]
-
-    progress_text = "Operation in progress. Please wait."
-    my_bar = st.progress(0, text=progress_text)
-
-    for idx, chunk in enumerate(wrapped_text):
-        my_bar.progress(idx, text=progress_text)
-        summary_chunk = generate_summary(chunk, summary_length)
-        conversations.add_message("user", f"summarize: {chunk}")
-        conversations.add_message("assistant", summary_chunk)
-
-    return conversations
-"""
