@@ -6,7 +6,7 @@ import openai
 from pydantic import BaseModel
 
 
-class SummarizeInput(BaseModel):
+class Input_Text(BaseModel):
     text: List[str]
     max_summarize_chars: int = 9000
     max_chars_per_request: int = 4000
@@ -16,7 +16,7 @@ class SummarizeInput(BaseModel):
 router = APIRouter()
 
 
-async def generate_summary_davinci(text: str, max_length: int = 500):
+async def generate_summary_turbo(text: str, max_length: int = 500):
     prompt = f"Could you please summarize the following sentence in Korean?\n\n{text}\n"
 
     completion = openai.ChatCompletion.create(
@@ -33,7 +33,7 @@ async def generate_summary_davinci(text: str, max_length: int = 500):
     return summary
 
 
-async def generate_summary_gpt3(text: str, max_length: int = 1000):
+async def generate_summary_davinci(text: str, max_length: int = 1000):
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt= f"Could you please summarize the following sentence in Korean?\n\n{text}\n",
@@ -44,8 +44,41 @@ async def generate_summary_gpt3(text: str, max_length: int = 1000):
     return summary
 
 
-@router.post("/summarize_large_text_davinci_003")
-async def summarize_large_text(input_data: SummarizeInput):
+
+async def generate_refine_gpt3(text: str, max_length: int = 1000):
+    prompt=f"Can you refine the article below to make it easier to read in Korean?\n\n{text}\n"
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+    )
+
+    summary = completion.choices[0].message["content"]
+    return summary
+
+
+async def generate_refine_gpt3(text: str, max_length: int = 1000):
+    prompt=f"Can you refine the article below to make it easier to read in Korean?\n\n{text}\n"
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+    )
+
+    summary = completion.choices[0].message["content"]
+    return summary
+
+async def handle_large_text(input_data: Input_Text, process_function: callable):
     text = input_data.text # 텍스트 가져오기 리스트
     max_summarize_chars = input_data.max_summarize_chars
     max_chars_per_request = input_data.max_chars_per_request
@@ -58,30 +91,26 @@ async def summarize_large_text(input_data: SummarizeInput):
         wrapped_text = wrapped_text[:length]
         summary_chunks = []
         for sub_chunk in enumerate(wrapped_text):
-            summarized_text = await generate_summary_gpt3(sub_chunk, summary_length)
+            summarized_text = await process_function(sub_chunk, summary_length)
             summary_chunks.append(summarized_text)
         final_summary_texts.append(summary_chunks)
 
     return {"summary": final_summary_texts}
+
+
+@router.post("/summarize_large_text_davinci")
+async def refine_large_text(input_data: Input_Text):
+    result = await handle_large_text(input_data, generate_summary_davinci)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    return result
 
 
 @router.post("/summarize_large_text_GPT3.5_Turbo")
-async def summarize_large_text(input_data: SummarizeInput):
-    text = input_data.text # 텍스트 가져오기 리스트
-    max_summarize_chars = input_data.max_summarize_chars
-    max_chars_per_request = input_data.max_chars_per_request
-    summary_length = input_data.summary_length
-    final_summary_texts = []
+async def refine_large_text(input_data: Input_Text):
+    result = await handle_large_text(input_data, generate_summary_turbo)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    return result
 
-    for text_chunk in text:
-        wrapped_text = textwrap.wrap(text_chunk, max_chars_per_request)
-        length = max_summarize_chars // max_chars_per_request
-        wrapped_text = wrapped_text[:length]
-        summary_chunks = []
-        for sub_chunk in enumerate(wrapped_text):
-            summarized_text = await generate_summary_davinci(sub_chunk, summary_length)
-            summary_chunks.append(summarized_text)
-        final_summary_texts.append(summary_chunks)
 
-    return {"summary": final_summary_texts}
-
+@router.post("/refine_large_text_GPT3.5_Turbo")
+async def summary_large_text(input_data: Input_Text):
+    result = await handle_large_text(input_data, generate_refine_gpt3)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    return result
