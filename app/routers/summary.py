@@ -96,7 +96,7 @@ async def extract_table(text: str, max_length: int = 1000):
     return extract
 
 
-async def handle_large_text(purpose, input_data: Input_Text, process_function: callable):
+async def handle_large_text(input_data: Input_Text, process_function: callable , purpose : str = "output"):
     text = input_data.text  # 텍스트 가져오기 리스트
     max_summarize_chars = input_data.max_summarize_chars
     max_chars_per_request = input_data.max_chars_per_request
@@ -123,31 +123,31 @@ async def split_sentences(input_data):
 
 @router.post("/summarize_large_text_davinci")
 async def summary_large_text_davinci(input_data: Input_Text):
-    result = await handle_large_text("summary", input_data, generate_summary_davinci)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    result = await handle_large_text(input_data, generate_summary_davinci)  # summarize_large_text 함수를 호출하여 결과를 받아옴
     return result
 
 
 @router.post("/summarize_large_text_GPT3.5_Turbo")
 async def summary_large_text_turbo(input_data: Input_Text):
-    result = await handle_large_text("summary", input_data, generate_summary_turbo)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    result = await handle_large_text(input_data, generate_summary_turbo)  # summarize_large_text 함수를 호출하여 결과를 받아옴
     return result
 
 
 @router.post("/refine_large_text_GPT3.5_Turbo")
 async def refine_large_text(input_data: Input_Text):
-    result = await handle_large_text("refine", input_data, generate_refine_gpt3)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    result = await handle_large_text(input_data, generate_refine_gpt3)  # summarize_large_text 함수를 호출하여 결과를 받아옴
     return result
 
 
 #@router.post("/one_task_refine_extract")
 async def extract_table_large_text(input_data: Input_Text):
     #summary = await handle_large_text("summary", input_data, generate_summary_turbo)
-    refine = await handle_large_text("refine", input_data, generate_refine_gpt3)
-    extract = await handle_large_text("extract", input_data, extract_table)
+    refine = await handle_large_text(input_data, generate_refine_gpt3)
+    extract = await handle_large_text(input_data, extract_table)
     return refine, extract
 
 
 @router.post("/extract_table_GPT3.5")
 async def extract_table_large_text(input_data: Input_Text):
-    result = await handle_large_text("extract", input_data, extract_table)  # summarize_large_text 함수를 호출하여 결과를 받아옴
+    result = await handle_large_text(input_data, extract_table)  # summarize_large_text 함수를 호출하여 결과를 받아옴
     return result
