@@ -54,8 +54,7 @@ async def generate_summary_davinci(text: str, max_length: int = 1000):
 
 
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
-    prompt = f"edit the article below to make it easier to read in Korean : {text}"
-    prompt = f"아래 글을 읽기 쉽게 수정해줘. : {text}"
+    prompt = f"한국어로 아래 글을 읽기 쉽게 수정해줘. : {text}"
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         temperature=0.7,
@@ -64,7 +63,7 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
         messages=[
             {
                 "role": "system",
-                "content": "당신은 유능한 작가입니다.",
+                "content": "당신은 유능한 작가 어시스던트입니다.",
             },
             {
                 "role": "user",
@@ -114,7 +113,7 @@ async def handle_large_text(purpose, input_data: Input_Text, process_function: c
             output_chunks.append(processed_text)
             split = await split_sentences(output_chunks)
         final_output_texts.append(split)
-    return {f"${purpose}": final_output_texts}
+    return {f"{purpose}": final_output_texts}
 
 
 async def split_sentences(input_data):
