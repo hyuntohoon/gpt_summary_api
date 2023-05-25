@@ -5,6 +5,7 @@ from fastapi import APIRouter
 import openai
 from pydantic import BaseModel
 
+import kss
 
 class Input_Text(BaseModel):
     text: List[str]
@@ -16,17 +17,24 @@ class Input_Text(BaseModel):
 router = APIRouter()
 
 
-async def generate_summary_turbo(text: str, max_length: int = 500):
-    prompt = f"Could you please summarize the following sentence in Korean?\n\n{text}\n"
+async def generate_summary_turbo(text: str, max_token: int = 500):
+    prompt = f"summarize this for a student in Korean : {text}"
 
     completion = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {
-            "role": "user",
-            "content": prompt,
-        }
-    ],
+        model="gpt-3.5-turbo",
+        temperature=0.7,
+        top_p=0.5,
+        frequency_penalty=0.5,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant for text summarization.",
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
     )
 
     summary = completion.choices[0].message["content"]
@@ -36,7 +44,7 @@ async def generate_summary_turbo(text: str, max_length: int = 500):
 async def generate_summary_davinci(text: str, max_length: int = 1000):
     response = openai.Completion.create(
         engine="text-davinci-003",
-        prompt= f"Could you please summarize the following sentence in Korean?\n\n{text}\n",
+        prompt= f"summarize the following sentence in Korean : {text}",
         max_tokens=2000,
         temperature=1,
     )
@@ -46,11 +54,18 @@ async def generate_summary_davinci(text: str, max_length: int = 1000):
 
 
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
-    prompt=f"Can you refine the article below to make it easier to read in Korean?\n\n{text}\n"
+    prompt=f"edit the article below to make it easier to read in Korean : {text}"
 
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
+        temperature=0.7,
+        top_p=0.5,
+        frequency_penalty=0.5,
         messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant for writer.",
+            },
             {
                 "role": "user",
                 "content": prompt,
@@ -58,45 +73,34 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
         ],
     )
 
-    summary = completion.choices[0].message["content"]
-    return summary
+    refine = completion.choices[0].message["content"]
+    return refine
 
 
-async def generate_refine_gpt3(text: str, max_length: int = 1000):
-    prompt=f"Can you refine the article below to make it easier to read in Korean?\n\n{text}\n"
-
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-    )
-
-    summary = completion.choices[0].message["content"]
-    return summary
 
 async def handle_large_text(input_data: Input_Text, process_function: callable):
     text = input_data.text # 텍스트 가져오기 리스트
     max_summarize_chars = input_data.max_summarize_chars
     max_chars_per_request = input_data.max_chars_per_request
-    summary_length = input_data.summary_length
-    final_summary_texts = []
+    output_length = input_data.summary_length
+    final_output_texts = []
 
     for text_chunk in text:
         wrapped_text = textwrap.wrap(text_chunk, max_chars_per_request)
         length = max_summarize_chars // max_chars_per_request
         wrapped_text = wrapped_text[:length]
-        summary_chunks = []
+        output_chunks = []
         for sub_chunk in enumerate(wrapped_text):
-            summarized_text = await process_function(sub_chunk, summary_length)
-            summary_chunks.append(summarized_text)
-        final_summary_texts.append(summary_chunks)
+            processed_text = await process_function(sub_chunk, output_length)
+            output_chunks.append(processed_text)
+            split = await split_sentences(output_chunks)
+        final_output_texts.append(split)
+    return {"output": final_output_texts}
 
-    return {"summary": final_summary_texts}
 
+async def split_sentences(input_data):
+    split_sentence = kss.split_sentences(input_data)
+    return split_sentence
 
 @router.post("/summarize_large_text_davinci")
 async def refine_large_text(input_data: Input_Text):
