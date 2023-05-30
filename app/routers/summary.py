@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter
 
 import openai
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 import kss
 
@@ -13,6 +13,25 @@ class Input_Text(BaseModel):
     max_summarize_chars: int = 9000
     max_chars_per_request: int = 4000
     summary_length: int = 1000
+
+    @validator('text')
+    def validate_text(cls, value):
+        if len(value) == 0:
+            raise ValueError("Text list should not be empty.")
+        return value
+
+
+class Chat_Text(BaseModel):
+    text: List[str]
+    chat: str
+    role: str = "고등학교"
+    max_token: int = 500
+
+    @validator('text', 'chat')
+    def validate_text(cls, value):
+        if len(value) == 0:
+            raise ValueError("Text list should not be empty.")
+        return value
 
 
 router = APIRouter()
@@ -29,11 +48,11 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant for text summarization.",
+                "content": "You are a helpful assistant for text summarization."
             },
             {
                 "role": "user",
-                "content": prompt,
+                "content": prompt
             }
         ],
     )
@@ -63,11 +82,11 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
         messages=[
             {
                 "role": "system",
-                "content": "당신은 유능한 작가 어시스던트입니다.",
+                "content": "당신은 유능한 작가 어시스던트입니다."
             },
             {
                 "role": "user",
-                "content": prompt,
+                "content": prompt
             }
         ],
     )
@@ -85,6 +104,7 @@ async def extract_table(text: str, max_length: int = 1000):
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
+            {"role": "system", "content": "너는 유능한 글의 목차 추출 어시스던트야."},
             {
                 "role": "user",
                 "content": prompt,
@@ -94,6 +114,27 @@ async def extract_table(text: str, max_length: int = 1000):
 
     extract = completion.choices[0].message["content"]
     return extract
+
+
+@router.post("/chat_gpt")
+async def chat_gpt(chat_text: Chat_Text):
+    prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {"role": "system", "content": f"너는 유능한 {chat_text.role} 분야의 전문가야"},
+            {"role": "user","content": "한국어로 아래 글을 읽기 쉽게 수정해줘."},
+            {"role": "assistant", "content" : f"{chat_text.text}"},
+            {"role": "user", "content": f"{chat_text.chat}"}
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    return response
 
 
 async def handle_large_text(input_data: Input_Text, process_function: callable , purpose : str = "output"):
@@ -144,16 +185,16 @@ async def extract_table_large_text(input_data: Input_Text):
     result = await handle_large_text(input_data, extract_table)  # summarize_large_text 함수를 호출하여 결과를 받아옴
     return result
 
+
 @router.post("/one_task_refine_extract")
 async def extract_table_large_text(input_data: Input_Text):
     refine = await handle_large_text(input_data, generate_refine_gpt3)
     extract = await handle_large_text(input_data, extract_table)
     return refine, extract
 
+
 @router.post("/one_task_summary_extract")
 async def one_task_summary_extract_table(input_data: Input_Text):
     summary = await handle_large_text(input_data, generate_summary_turbo)
     extract = await handle_large_text(input_data, extract_table)
     return summary, extract
-
-
