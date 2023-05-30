@@ -189,12 +189,12 @@ async def extract_table_large_text(input_data: Input_Text):
 @router.post("/one_task_refine_extract")
 async def extract_table_large_text(input_data: Input_Text):
     refine = await handle_large_text(input_data, generate_refine_gpt3)
-    extract = await handle_large_text(input_data, extract_table)
+    extract = await handle_large_text(input_data, extract_table, "extract")
     return refine, extract
 
 
 @router.post("/one_task_summary_extract")
 async def one_task_summary_extract_table(input_data: Input_Text):
     summary = await handle_large_text(input_data, generate_summary_turbo)
-    extract = await handle_large_text(input_data, extract_table)
+    extract = await handle_large_text(input_data, extract_table, "extract")
     return summary, extract
