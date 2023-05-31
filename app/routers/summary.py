@@ -96,15 +96,14 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
 
 
 async def extract_table(text: str, max_length: int = 1000):
-    prompt = f"아래 글에서 가장 추천하는 단 하나의 목차 추출해줘 : {text}"
-
+    prompt = f"아래의 글을 통해 목차로 정할 가장 추천하는 10글자 이내의 구문을 말해줘 : {text}"
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
-            {"role": "system", "content": "너는 유능한 글의 목차 추출 어시스던트야."},
+            {"role": "system", "content": "너는 글의 목차 생성 돕는 유능한 어시스던트야."},
             {
                 "role": "user",
                 "content": prompt,
@@ -112,7 +111,8 @@ async def extract_table(text: str, max_length: int = 1000):
         ],
     )
 
-    extract = completion.choices[0].message["content"]
+    output = completion.choices[0].message["content"]
+    extract = output.replace("\\", "").replace("\"", "").replace(".","")
     return extract
 
 
