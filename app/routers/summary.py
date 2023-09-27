@@ -6,12 +6,16 @@ import openai
 from pydantic import BaseModel, validator
 
 import kss
+import requests
+import time
+
+from asyncio import run
 
 
 class Input_Text(BaseModel):
     text: List[str]
     max_summarize_chars: int = 9000
-    max_chars_per_request: int = 4000
+    max_chars_per_request: int = 3000
     summary_length: int = 1000
 
     @validator('text')
@@ -60,6 +64,37 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
     summary = completion.choices[0].message["content"]
     return summary
 
+async def aa(text: str, max_token: int = 500):
+    prompt = f"2000자 내의 sf 소설를 집필해주세요 "
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-4-0613",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {"role": "user", "content": f"{prompt}"}
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    return response
+
+async def bb(text: str, max_token: int = 500):
+    prompt = f"2000자 내의 sf 소설를 집필해주세요 "
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {"role": "user", "content": f"{prompt}"}
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    return response
 
 async def generate_summary_davinci(text: str, max_length: int = 1000):
     response = openai.Completion.create(
@@ -80,10 +115,6 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
-            {
-                "role": "system",
-                "content": "당신은 유능한 작가 어시스던트입니다."
-            },
             {
                 "role": "user",
                 "content": prompt
@@ -112,7 +143,7 @@ async def extract_table(text: str, max_length: int = 1000):
     )
 
     output = completion.choices[0].message["content"]
-    extract = output.replace("\\", "").replace("\"", "").replace(".","")
+    extract = output.replace("\\", "").replace("\"", "").replace(".", "")
     return extract
 
 
@@ -127,8 +158,8 @@ async def chat_gpt(chat_text: Chat_Text):
         frequency_penalty=0.0,
         messages=[
             {"role": "system", "content": f"너는 유능한 {chat_text.role} 분야의 전문가야"},
-            {"role": "user","content": "한국어로 아래 글을 읽기 쉽게 수정해줘."},
-            {"role": "assistant", "content" : f"{chat_text.text}"},
+            {"role": "user", "content": "한국어로 아래 글을 읽기 쉽게 수정해줘."},
+            {"role": "assistant", "content": f"{chat_text.text}"},
             {"role": "user", "content": f"{chat_text.chat}"}
         ],
     )
@@ -137,7 +168,7 @@ async def chat_gpt(chat_text: Chat_Text):
     return response
 
 
-async def handle_large_text(input_data: Input_Text, process_function: callable , purpose : str = "output"):
+async def handle_large_text(input_data: Input_Text, process_function: callable, purpose: str = "output"):
     text = input_data.text  # 텍스트 가져오기 리스트
     max_summarize_chars = input_data.max_summarize_chars
     max_chars_per_request = input_data.max_chars_per_request
@@ -187,9 +218,9 @@ async def extract_table_large_text(input_data: Input_Text):
 
 
 @router.post("/one_task_refine_extract")
-async def extract_table_large_text(input_data: Input_Text):
-    refine = await handle_large_text(input_data, generate_refine_gpt3)
-    extract = await handle_large_text(input_data, extract_table, "extract")
+def extract_table_large_text(input_data: Input_Text):
+    refine = run(handle_large_text(input_data, generate_refine_gpt3))
+    extract = run(handle_large_text(input_data, extract_table, "extract"))
     return refine, extract
 
 
@@ -198,3 +229,15 @@ async def one_task_summary_extract_table(input_data: Input_Text):
     summary = await handle_large_text(input_data, generate_summary_turbo)
     extract = await handle_large_text(input_data, extract_table, "extract")
     return summary, extract
+
+@router.post("/test")
+async def test(input_data: Input_Text):
+    start_time = time.time()
+    test_output_1 = await handle_large_text(input_data, aa)
+    end_time = time.time()
+    now = end_time - start_time
+    start_time_2 = time.time()
+    test_output_2 = await handle_large_text(input_data, bb)
+    end_time_2 = time.time()
+    return test_output_1, now, test_output_2, end_time_2 - start_time_2
+
