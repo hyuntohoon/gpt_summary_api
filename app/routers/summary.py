@@ -239,5 +239,5 @@ async def test(input_data: Input_Text):
     start_time_2 = time.time()
     test_output_2 = await handle_large_text(input_data, bb)
     end_time_2 = time.time()
-    return test_output_1, now, test_output_2, end_time_2 - start_time_2
+    return test_output_1, now
 
