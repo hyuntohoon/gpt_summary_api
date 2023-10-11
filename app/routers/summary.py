@@ -6,8 +6,6 @@ import openai
 from pydantic import BaseModel, validator
 
 import kss
-import requests
-import time
 
 from asyncio import run
 
