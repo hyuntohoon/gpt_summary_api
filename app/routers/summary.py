@@ -65,7 +65,7 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
     return summary
 
 async def aa(text: str, max_token: int = 500):
-    prompt = f"2000자 내의 sf 소설를 집필해주세요 "
+    prompt = f"해당 글에서 전문용어를 추출하여 정리해주세요 "
 
     completion = openai.ChatCompletion.create(
         model="gpt-4-0613",
@@ -81,15 +81,18 @@ async def aa(text: str, max_token: int = 500):
     return response
 
 async def bb(text: str, max_token: int = 500):
-    prompt = f"2000자 내의 sf 소설를 집필해주세요 "
+    prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 아래의 글에서 전문용어를 추출하고 해당 전문용어의 설명을 :이 기호 이후에 설명해주세요. {text}"
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0613",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
-            {"role": "user", "content": f"{prompt}"}
+            {
+                "role": "user",
+                "content": prompt
+            }
         ],
     )
 
@@ -232,12 +235,7 @@ async def one_task_summary_extract_table(input_data: Input_Text):
 
 @router.post("/test")
 async def test(input_data: Input_Text):
-    start_time = time.time()
-    test_output_1 = await handle_large_text(input_data, aa)
-    end_time = time.time()
-    now = end_time - start_time
-    start_time_2 = time.time()
     test_output_2 = await handle_large_text(input_data, bb)
-    end_time_2 = time.time()
-    return test_output_1, now
+    return test_output_2
+
 
