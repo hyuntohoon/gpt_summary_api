@@ -172,6 +172,7 @@ async def handle_large_text(input_data: Input_Text, process_function: callable, 
             output_chunks.append(processed_text)
             split = await split_sentences(output_chunks)
         final_output_texts.append(split)
+
     return {f"{purpose}": final_output_texts}
 
 
@@ -179,19 +180,45 @@ async def split_sentences(input_data):
     split_sentence = kss.split_sentences(input_data)
     return split_sentence
 
-def word_separate(input_sentences): ## 단어 분리
-    word = []       # 단어를 저장할 리스트
-    sentence = []   # 설명을 저장할 리스트
 
-    for sentence_str in input_sentences:
-        # ":" 기준으로 문자열을 나눕니다.
-        parts = sentence_str.split(":")
+async def handle_large_text_word(input_data: Input_Text, process_function: callable, purpose: str = "output"):
+    text = input_data.text  # 텍스트 가져오기 리스트
+    max_summarize_chars = input_data.max_summarize_chars
+    max_chars_per_request = input_data.max_chars_per_request
+    output_length = input_data.summary_length
+    final_output_texts = []
 
-        if len(parts) == 2:  # ":"가 발견되면
-            word.append(parts[0].strip())
-            sentence.append(parts[1].strip())
-        elif sentence:  # 이전에 저장한 sentence가 있다면
-            sentence[-1] += " " + sentence_str  # 이전 sentence에 추가
+    for text_chunk in text:
+        wrapped_text = textwrap.wrap(text_chunk, max_chars_per_request)
+        length = max_summarize_chars // max_chars_per_request
+        wrapped_text = wrapped_text[:length]
+        output_chunks = []
+        for sub_chunk in enumerate(wrapped_text):
+            processed_text = await process_function(sub_chunk, output_length)
+            output_chunks.append(processed_text)
+            split = await split_sentences(output_chunks)
+        final_output_texts.append(split)
+
+    word, sentence = word_separate(final_output_texts)
+    return {f"word": word, f"sentence": sentence}
+
+
+def word_separate(input_list):
+    word = []
+    sentence = []
+    for A in input_list:
+        for item in A:
+            # ":"를 기준으로 문자열을 분할
+            item_str = str(item)
+            parts = item_str.split(":")
+
+            if len(parts) == 1:
+                # ":"가 없으면 이전 문장 문자열에 추가
+                previous_sentence += " " + parts[0].strip()
+            elif len(parts) == 2:
+                word.append(parts[0].strip())
+                sentence.append(parts[1].strip())
+                previous_sentence = ""  # 새로운 단어와 설명을 시작하면 이전 문장 초기화
 
     return word, sentence
 
@@ -232,10 +259,11 @@ async def one_task_summary_extract_table(input_data: Input_Text):
     extract = await handle_large_text(input_data, extract_table, "extract")
     return summary, extract
 
+
 @router.post("/test")
 async def test(input_data: Input_Text):
-    extracted_word = await handle_large_text(input_data, extract_word())
-    word, sentence = word_separate(extracted_word)
-    return word, sentence
+    extracted_word = await handle_large_text_word(input_data, extract_word)
+    print(extracted_word)
+    return extracted_word
 
 

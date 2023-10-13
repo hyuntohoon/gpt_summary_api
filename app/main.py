@@ -1,7 +1,7 @@
 import uvicorn
 import os
 from fastapi import FastAPI
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 from routers import summary
 
 import openai
