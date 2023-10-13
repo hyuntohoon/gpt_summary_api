@@ -5,6 +5,7 @@ from fastapi import APIRouter
 import openai
 from pydantic import BaseModel, validator
 
+
 import kss
 
 from asyncio import run
@@ -62,23 +63,8 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
     summary = completion.choices[0].message["content"]
     return summary
 
-async def aa(text: str, max_token: int = 500):
-    prompt = f"해당 글에서 전문용어를 추출하여 정리해주세요 "
 
-    completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
-        temperature=0.7,
-        top_p=1.0,
-        frequency_penalty=0.0,
-        messages=[
-            {"role": "user", "content": f"{prompt}"}
-        ],
-    )
-
-    response = completion.choices[0].message["content"]
-    return response
-
-async def bb(text: str, max_token: int = 500):
+async def extract_word(text: str, max_token: int = 500):
     prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 아래의 글에서 전문용어를 추출하고 해당 전문용어의 설명을 :이 기호 이후에 설명해주세요. {text}"
 
     completion = openai.ChatCompletion.create(
@@ -193,6 +179,21 @@ async def split_sentences(input_data):
     split_sentence = kss.split_sentences(input_data)
     return split_sentence
 
+def word_separate(input_sentences): ## 단어 분리
+    word = []       # 단어를 저장할 리스트
+    sentence = []   # 설명을 저장할 리스트
+
+    for sentence_str in input_sentences:
+        # ":" 기준으로 문자열을 나눕니다.
+        parts = sentence_str.split(":")
+
+        if len(parts) == 2:  # ":"가 발견되면
+            word.append(parts[0].strip())
+            sentence.append(parts[1].strip())
+        elif sentence:  # 이전에 저장한 sentence가 있다면
+            sentence[-1] += " " + sentence_str  # 이전 sentence에 추가
+
+    return word, sentence
 
 @router.post("/summarize_large_text_davinci")
 async def summary_large_text_davinci(input_data: Input_Text):
@@ -233,7 +234,8 @@ async def one_task_summary_extract_table(input_data: Input_Text):
 
 @router.post("/test")
 async def test(input_data: Input_Text):
-    test_output_2 = await handle_large_text(input_data, bb)
-    return test_output_2
+    extracted_word = await handle_large_text(input_data, extract_word())
+    word, sentence = word_separate(extracted_word)
+    return word, sentence
 
 
