@@ -60,11 +60,7 @@ jobs:
           
       - name: Docker run
         run: |
-          # 현재 동작 중인 컨테이너를 중지합니다. 중지에 실패하더라도 에러를 발생시키지 않습니다.
           sudo docker stop ${{ env.NAME }} || true
-          # 이전에 실행 중이던 컨테이너를 제거합니다.
           sudo docker rm ${{ env.NAME }} || true
-          # 이전에 빌드된 이미지를 제거합니다.
           sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
-          # 새로운 컨테이너를 실행합니다. 포트는 8000:8000, 설정된 OPENAI_API_KEY와 FIREBASE_AUTH_KEY를 셋하여 해당 도커 이미지를 통해 컨테이너를 실행합니다.
           sudo docker run -d -p 8000:8000 --name ${{ env.NAME }} --restart always -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e FIREBASE_AUTH_KEY=${{ secrets.FIREBASE_AUTH_KEY }} ${{ env.DOCKER_IMAGE }}:latest
