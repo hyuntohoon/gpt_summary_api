@@ -88,4 +88,4 @@ jobs:
           # 이전에 빌드된 이미지를 제거한다.
           sudo docker rmi ${{ env.DOCKER_IMAGE }}:latest || true
           # 새로운 컨테이너를 실행합니다. 포트는 8000:8--, 설정된 OPENAI_API_KEY를 셋하여 해동 도커 이미지를 통해 컨테이너를 실행한다.
-          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ${{ env.DOCKER_IMAGE }}:latest
+          sudo docker run -d -p 8000:8000 --name fastapi_cicd --restart always -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} -e FIREBASE_AUTH_KEY=${{ secrets.FIREBASE_AUTH_KEY }} ${{ env.DOCKER_IMAGE }}:latest
