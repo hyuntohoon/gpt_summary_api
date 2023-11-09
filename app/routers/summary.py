@@ -14,7 +14,9 @@ from asyncio import run
 import firebase_admin
 from firebase_admin import credentials, db, firestore
 
-cred = credentials.Certificate("app/routers/firebase_auth_key.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+firebase_auth_path = os.path.join(BASE_DIR, "firebase_auth_key.json")
+cred = credentials.Certificate(firebase_auth_path)
 firebase_admin.initialize_app(cred)
 
 # Firestore 클라이언트 생성
