@@ -1,3 +1,5 @@
+import os
+import re
 import textwrap
 from typing import List
 from fastapi import APIRouter
@@ -5,14 +7,42 @@ from fastapi import APIRouter
 import openai
 from pydantic import BaseModel, validator
 
-
 import kss
 
 from asyncio import run
 
+import firebase_admin
+from firebase_admin import credentials, db, firestore
+
+cred = credentials.Certificate("app/routers/firebase_auth_key.json")
+firebase_admin.initialize_app(cred)
+
+# Firestore 클라이언트 생성
+db = firestore.client()
+
+# "pdfs" 컬렉션에 대한 참조 설정
+pdfs_ref = db.collection("pdfs")
+
+
+# "pdfs" 컬렉션의 모든 문서 가져오기
+docs = pdfs_ref.stream()
+
+parent_doc_ref = db.collection("pdfs").document("AVwKksft99pxb2mgShed")
+subcollection_ref = parent_doc_ref.collection("dictionary")
+
+# 하위 컬렉션의 모든 문서 가져오기
+subcollection_docs = subcollection_ref.stream()
+
+for doc in subcollection_docs:
+    # 문서의 데이터 출력
+    # print(f"Subcollection Document ID: {doc.id}")
+    head_value = doc.get("head")
+    print(f"Head Value: {head_value}")
+
 
 class Input_Text(BaseModel):
     text: List[str]
+    type: str
     max_summarize_chars: int = 9000
     max_chars_per_request: int = 3000
     summary_length: int = 1000
@@ -44,7 +74,7 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
     prompt = f"summarize this for a student in Korean : {text}"
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0613",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -65,7 +95,44 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
 
 
 async def extract_word(text: str, max_token: int = 500):
-    prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 아래의 글에서 전문용어를 추출하고 해당 전문용어의 설명을 :이 기호 이후에 설명해주세요. {text}"
+    prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 아래의 글에서 전문용어를 추출하여 번호 없이 해당 전문용어의 설명을 :이 기호 이후에 설명해주세요. {text}"
+    completion = openai.ChatCompletion.create(
+        model="gpt-4-0613",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    return response
+
+async def add_recommand_word(text: str, max_token: int = 500):
+    prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 해당 분야나 주제와 관련된 번호 없이 전문 용어를 추천해 주세요.또한 전문용어의 설명을 :이 기호 이후에 설명해주세요. 아래는 몇 가지 이미 알려진 용어의 예시입니다: {text} 이러한 용어를 고려하여 추가 전문 용어를 추천해 주세요."
+
+    completion = openai.ChatCompletion.create(
+        model="gpt-4-0613",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    return response
+
+async def createProblem(text: str, type:str, max_token: int = 500):
+    prompt = f"아래 정보를 기반으로 {str} 형태의 하나의 문제를 만들어주세요. 또한 그에 대한 답안을 함께 제시해주세요. {text}"
 
     completion = openai.ChatCompletion.create(
         model="gpt-4-0613",
@@ -97,7 +164,7 @@ async def generate_summary_davinci(text: str, max_length: int = 1000):
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
     prompt = f"한국어로 아래 글을 읽기 쉽게 수정해줘. : {text}"
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0613",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -116,7 +183,7 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
 async def extract_table(text: str, max_length: int = 1000):
     prompt = f"아래의 글을 통해 목차로 정할 가장 추천하는 10글자 이내의 구문을 말해줘 : {text}"
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0613",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -139,7 +206,7 @@ async def chat_gpt(chat_text: Chat_Text):
     prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
 
     completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0613",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -202,6 +269,46 @@ async def handle_large_text_word(input_data: Input_Text, process_function: calla
     word, sentence = word_separate(final_output_texts)
     return {f"word": word, f"sentence": sentence}
 
+async def handle_large_text_problem(input_data: Input_Text, process_function: callable, purpose: str = "output"):
+    text = input_data.text  # 텍스트 가져오기 리스트
+    max_summarize_chars = input_data.max_summarize_chars
+    max_chars_per_request = input_data.max_chars_per_request
+    output_length = input_data.summary_length
+    final_output_texts = []
+
+    for text_chunk in text:
+        wrapped_text = textwrap.wrap(text_chunk, max_chars_per_request)
+        length = max_summarize_chars // max_chars_per_request
+        wrapped_text = wrapped_text[:length]
+        output_chunks = []
+        for sub_chunk in enumerate(wrapped_text):
+            processed_text = await process_function(sub_chunk, output_length)
+            output_chunks.append(processed_text)
+        final_output_texts.append(output_chunks)
+
+    problem, answer = parse_response(final_output_texts)
+    return {f"problem": problem, f"answer": answer}
+
+
+def parse_response(response):
+    # Extract the first element of the list which is the actual response string
+    response_str = response[0][0]
+    print(response_str)
+    # Split the response into parts where "문제" indicates a new question
+    parts = response_str.split('문제: ')
+    # Initialize empty lists to hold problems and answers
+    problems = []
+    answers = []
+    for part in parts[1:]:  # The first split is empty so we skip it
+        # Now, we further split each part into problem and answer using "답안:"
+        problem, answer = part.split('\n답안: ')
+        # Append the problem part to problems list trimming whitespace
+        problems.append(problem.strip())
+        # Append the answer part to answers list trimming whitespace
+        answers.append(answer.strip())
+    return problems, answers
+
+
 
 def word_separate(input_list):
     word = []
@@ -260,10 +367,15 @@ async def one_task_summary_extract_table(input_data: Input_Text):
     return summary, extract
 
 
-@router.post("/test")
-async def test(input_data: Input_Text):
+@router.post("/word")
+async def word(input_data: Input_Text):
     extracted_word = await handle_large_text_word(input_data, extract_word)
-    print(extracted_word)
     return extracted_word
 
+
+@router.post("/problem")
+async def problemRouter(input_data: Input_Text):
+    ##if(input_data.type != "객관식"):
+    problem = await handle_large_text_problem(input_data, createProblem)
+    return problem
 
