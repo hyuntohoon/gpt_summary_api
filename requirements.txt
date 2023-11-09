@@ -7,3 +7,5 @@ pydantic
 pydantic_settings
 
 kss~=4.5.3
+
+firebase_admin

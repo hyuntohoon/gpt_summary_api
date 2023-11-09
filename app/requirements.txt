@@ -3,3 +3,4 @@ uvicorn
 openai
 kss
 pydantic==1.10.10
+firebase_admin
