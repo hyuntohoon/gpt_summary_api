@@ -43,11 +43,12 @@ for doc in subcollection_docs:
 
 
 class Input_Text(BaseModel):
-    text: List[str]
     type: str
+    text: List[str]
+    problem_count: str = 3
     max_summarize_chars: int = 9000
     max_chars_per_request: int = 3000
-    summary_length: int = 1000
+    summary_length: int = 2000
 
     @validator('text')
     def validate_text(cls, value):
@@ -133,9 +134,13 @@ async def add_recommand_word(text: str, max_token: int = 500):
     response = completion.choices[0].message["content"]
     return response
 
-async def createProblem(text: str, type:str, max_token: int = 500):
-    prompt = f"아래 정보를 기반으로 {str} 형태의 하나의 문제를 만들어주세요. 또한 그에 대한 답안을 함께 제시해주세요. {text}"
 
+async def create_problem(text: str, type: str, problem_count: int):
+    print(text)
+    print(type)
+    print(problem_count)
+    prompt = f"아래 정보를 기반으로 {type}형태의 {problem_count}개의 문제를 만들어주세요. 객관식 형태는 5개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 또한 그에 대한 답안을 함께 제시해주세요. 번호를 붙히지 않고 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
+    print(prompt)
     completion = openai.ChatCompletion.create(
         model="gpt-4-0613",
         temperature=0.7,
@@ -284,7 +289,7 @@ async def handle_large_text_problem(input_data: Input_Text, process_function: ca
         wrapped_text = wrapped_text[:length]
         output_chunks = []
         for sub_chunk in enumerate(wrapped_text):
-            processed_text = await process_function(sub_chunk, output_length)
+            processed_text = await process_function(sub_chunk, input_data.type, input_data.problem_count)
             output_chunks.append(processed_text)
         final_output_texts.append(output_chunks)
 
@@ -297,17 +302,20 @@ def parse_response(response):
     response_str = response[0][0]
     print(response_str)
     # Split the response into parts where "문제" indicates a new question
-    parts = response_str.split('문제: ')
+    parts = response_str.split('문제 : ')
+    print(parts)
     # Initialize empty lists to hold problems and answers
     problems = []
     answers = []
     for part in parts[1:]:  # The first split is empty so we skip it
         # Now, we further split each part into problem and answer using "답안:"
-        problem, answer = part.split('\n답안: ')
+        problem, answer = part.split('\n답안 : ')
         # Append the problem part to problems list trimming whitespace
         problems.append(problem.strip())
         # Append the answer part to answers list trimming whitespace
         answers.append(answer.strip())
+        print(problems)
+        print(answers)
     return problems, answers
 
 
@@ -376,8 +384,7 @@ async def word(input_data: Input_Text):
 
 
 @router.post("/problem")
-async def problemRouter(input_data: Input_Text):
-    ##if(input_data.type != "객관식"):
-    problem = await handle_large_text_problem(input_data, createProblem)
-    return problem
+async def problem(input_data: Input_Text):
+    extract_problem = await handle_large_text_problem(input_data, create_problem)
+    return extract_problem
 
