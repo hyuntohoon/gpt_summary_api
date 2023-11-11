@@ -136,7 +136,7 @@ async def add_recommand_word(text: str, max_token: int = 500):
 
 
 async def create_problem(text: str, type: str, problem_count: int):
-    prompt = f"아래 정보를 기반으로 {type}형식의 {problem_count}개의 문제를 만들어주세요.문제에 번호를 붙히지 말아주세요. 객관식 형식의 경우 4개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 또한 그에 대한 답안을 함께 제시해주세요. 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
+    prompt = f"아래 정보를 기반으로 {type}형식의 {problem_count}개의 문제를 만들어주세요. 그리고 그에 대한 답안을 함께 제시해주세요. 문제에 번호를 붙히지 말아주세요. 객관식 형식의 경우 4개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
     print(prompt)
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-1106",
