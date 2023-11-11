@@ -77,7 +77,7 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
     prompt = f"summarize this for a student in Korean : {text}"
 
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -100,7 +100,7 @@ async def generate_summary_turbo(text: str, max_token: int = 500):
 async def extract_word(text: str, max_token: int = 500):
     prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 아래의 글에서 전문용어를 추출하여 번호 없이 해당 전문용어의 설명을 :이 기호 이후에 설명해주세요. {text}"
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -119,7 +119,7 @@ async def add_recommand_word(text: str, max_token: int = 500):
     prompt = f"당신의 기능을 통해 전문용어 사전을 만들 계획입니다. 해당 분야나 주제와 관련된 번호 없이 전문 용어를 추천해 주세요.또한 전문용어의 설명을 :이 기호 이후에 설명해주세요. 아래는 몇 가지 이미 알려진 용어의 예시입니다: {text} 이러한 용어를 고려하여 추가 전문 용어를 추천해 주세요."
 
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -142,7 +142,7 @@ async def create_problem(text: str, type: str, problem_count: int):
     prompt = f"아래 정보를 기반으로 {type}형태의 {problem_count}개의 문제를 만들어주세요. 객관식 형태는 4개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 또한 그에 대한 답안을 함께 제시해주세요. 번호를 붙히지 않고 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
     print(prompt)
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -171,7 +171,7 @@ async def generate_summary_davinci(text: str, max_length: int = 1000):
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
     prompt = f"한국어로 아래 글을 읽기 쉽게 수정해줘. : {text}"
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -190,7 +190,7 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
 async def extract_table(text: str, max_length: int = 1000):
     prompt = f"아래의 글을 통해 목차로 정할 가장 추천하는 10글자 이내의 구문을 말해줘 : {text}"
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
@@ -213,7 +213,7 @@ async def chat_gpt(chat_text: Chat_Text):
     prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
 
     completion = openai.ChatCompletion.create(
-        model="gpt-4-0613",
+        model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
