@@ -308,8 +308,8 @@ def parse_response(response):
         # Now, we further split each part into problem and answer using "답안:"
         problem, answer = part.split('\n답안 : ')
         # Append the problem part to problems list trimming whitespace
-        problem = problem.replace('보기:', '')
-        problem = problem.replace('보기 :', '')
+        problem = problem.replace('\n보기:', '')
+        problem = problem.replace('\n보기 :', '')
         problem = problem.replace('1.', '')
         problem = problem.replace('2.', '')
         problem = problem.replace('3.', '')
