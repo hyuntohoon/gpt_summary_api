@@ -136,10 +136,7 @@ async def add_recommand_word(text: str, max_token: int = 500):
 
 
 async def create_problem(text: str, type: str, problem_count: int):
-    print(text)
-    print(type)
-    print(problem_count)
-    prompt = f"아래 정보를 기반으로 {type}형태의 {problem_count}개의 문제를 만들어주세요. 객관식 형태는 4개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 또한 그에 대한 답안을 함께 제시해주세요. 번호를 붙히지 않고 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
+    prompt = f"아래 정보를 기반으로 {type}형식의 {problem_count}개의 문제를 만들어주세요.문제에 번호를 붙히지 말아주세요. 객관식 형식의 경우 4개의 보기를 주고 알맞은 보기를 고르는 형식입니다. 또한 그에 대한 답안을 함께 제시해주세요. 문제는 '문제 : ', 답안은 '답안 : ' 형태로 제시해주세요. {text}"
     print(prompt)
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-1106",
@@ -311,11 +308,16 @@ def parse_response(response):
         # Now, we further split each part into problem and answer using "답안:"
         problem, answer = part.split('\n답안 : ')
         # Append the problem part to problems list trimming whitespace
+        problem = problem.replace('보기:', '')
+        problem = problem.replace('보기 :', '')
+        problem = problem.replace('\n1.', '')
+        problem = problem.replace('\n2.', '')
+        problem = problem.replace('\n3.', '')
+        problem = problem.replace('\n4.', '')
         problems.append(problem.strip())
         # Append the answer part to answers list trimming whitespace
         answers.append(answer.strip())
-        print(problems)
-        print(answers)
+
     return problems, answers
 
 
