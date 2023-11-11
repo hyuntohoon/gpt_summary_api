@@ -310,10 +310,10 @@ def parse_response(response):
         # Append the problem part to problems list trimming whitespace
         problem = problem.replace('보기:', '')
         problem = problem.replace('보기 :', '')
-        problem = problem.replace('1.', '')
-        problem = problem.replace('2.', '')
-        problem = problem.replace('3.', '')
-        problem = problem.replace('4.', '')
+        problem = problem.replace('1.', '\n')
+        problem = problem.replace('2.', '\n')
+        problem = problem.replace('3.', '\n')
+        problem = problem.replace('4.', '\n')
         problems.append(problem.strip())
         # Append the answer part to answers list trimming whitespace
         answers.append(answer.strip())
