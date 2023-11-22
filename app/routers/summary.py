@@ -56,6 +56,10 @@ class Input_Text(BaseModel):
             raise ValueError("Text list should not be empty.")
         return value
 
+class Input_Text_Check(BaseModel):
+    problem: str
+    userAnswer: str
+    impomation : str
 
 class Chat_Text(BaseModel):
     text: List[str]
@@ -152,6 +156,27 @@ async def create_problem(text: str, type: str, problem_count: int):
     )
 
     response = completion.choices[0].message["content"]
+    return response
+
+async def check_problem(problem: str, userAnswer: str, impomation: str):
+    prompt = f" 문제와 사용자가 제시한 답안을 제공하겠습니다. 추가로 제시한 정보를 통해 정답을 확인해주세요. 맞다면 '정답', 틀렸다면 '오답'을 첫번째 줄에 말해주세요. 해당문제에 대한 '해설:'를 통해 해설해주세요. 문제와 사용자가 제시한 답안입니다. 문제 :{problem}, 답안 :{userAnswer}, 이는 정답확인을 위해 제공하는 정보입니다. 정보 :{impomation} "
+    print(prompt)
+    completion = openai.ChatCompletion.create(
+        model="gpt-4",
+        temperature=0.7,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        messages=[
+            {"role": "system", "content": "당신은 주어진 문제와, 사용자가 제시한 답안을 통해 답이 맞았는지, 틀렸는지 확인하는 유능한 어시스던트입니다."},
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+    )
+
+    response = completion.choices[0].message["content"]
+    print(response)
     return response
 
 async def generate_summary_davinci(text: str, max_length: int = 1000):
@@ -293,6 +318,15 @@ async def handle_large_text_problem(input_data: Input_Text, process_function: ca
     problem, answer = parse_response(final_output_texts)
     return {f"problem": problem, f"answer": answer}
 
+async def handle_large_text_problem_check(input_data: Input_Text_Check, process_function: callable, purpose: str = "output"):
+    problem = input_data.problem
+    userAnswer = input_data.userAnswer
+    impomation = input_data.impomation
+    final_output_texts = []
+    processed_text = await process_function(problem, userAnswer, impomation)
+    print(processed_text)
+    #problem, answer = parse_response(final_output_texts)
+    return {f"problem": problem, f"answer": userAnswer}
 
 def parse_response(response):
     # Extract the first element of the list which is the actual response string
@@ -300,6 +334,33 @@ def parse_response(response):
     print(response_str)
     # Split the response into parts where "문제" indicates a new question
     parts = response_str.split('문제 : ')
+    print(parts)
+    # Initialize empty lists to hold problems and answers
+    problems = []
+    answers = []
+    for part in parts[1:]:  # The first split is empty so we skip it
+        # Now, we further split each part into problem and answer using "답안:"
+        problem, answer = part.split('\n답안 : ')
+        # Append the problem part to problems list trimming whitespace
+        problem = problem.replace('\n보기:', '')
+        problem = problem.replace('\n보기 :', '')
+        problem = problem.replace('1.', '')
+        problem = problem.replace('2.', '')
+        problem = problem.replace('3.', '')
+        problem = problem.replace('4.', '')
+        problems.append(problem.strip())
+        # Append the answer part to answers list trimming whitespace
+        answers.append(answer.strip())
+
+    return problems, answers
+
+def parse_response_check(response):
+    # Extract the first element of the list which is the actual response string
+    response_str = response[0][0]
+    print(response_str)
+    # Split the response into parts where "문제" indicates a new question
+    parts = response_str.split('오답')
+    parts = response_str.split('정답')
     print(parts)
     # Initialize empty lists to hold problems and answers
     problems = []
@@ -390,3 +451,7 @@ async def problem(input_data: Input_Text):
     extract_problem = await handle_large_text_problem(input_data, create_problem)
     return extract_problem
 
+@router.post("/checkProblem")
+async def problem(Input_Text_Check: Input_Text_Check):
+    extract_problem = await handle_large_text_problem_check(Input_Text_Check, check_problem)
+    return extract_problem
