@@ -198,7 +198,7 @@ async def check_problem(problem: str, userAnswer: str, impomation: str):
 
 
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
-    prompt = f"한국어로 아래 글을 읽기 쉽게 수정해줘. : {text}"
+    prompt = f"한국어로 아래 글을 읽기 쉽게 수정해주세요. : {text}"
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-1106",
         temperature=0.7,
@@ -217,21 +217,22 @@ async def generate_refine_gpt3(text: str, max_length: int = 1000):
 
 
 async def extract_table(text: str, max_length: int = 1000):
-    prompt = f"아래의 글을 통해 목차로 정할 가장 추천하는 10글자 이내의 구문을 말해줘 : {text}"
+    print(text)
+    prompt = f"아래의 글을 통해 목차로 정할 가장 추천하는 10글자 이내의 구문 단 하나만 말해주세요 : {text}"
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-1106",
         temperature=0.7,
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
-            {"role": "system", "content": "너는 글의 목차 생성 돕는 유능한 어시스던트야."},
+            {"role": "system", "content": "너는 글의 목차 생성 돕는 유능한 어시스던트입니다.."},
             {
                 "role": "user",
                 "content": prompt,
             }
         ],
     )
-
+    print(completion.choices[0].message["content"])
     output = completion.choices[0].message["content"]
     extract = output.replace("\\", "").replace("\"", "").replace(".", "")
     return extract
@@ -239,7 +240,7 @@ async def extract_table(text: str, max_length: int = 1000):
 
 @router.post("/chat_gpt")
 async def chat_gpt(chat_text: Chat_Text):
-    prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
+    prompt = f"아래의 글에 대해 답변해주세요 {chat_text.chat}"
 
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-1106",
@@ -247,8 +248,8 @@ async def chat_gpt(chat_text: Chat_Text):
         top_p=1.0,
         frequency_penalty=0.0,
         messages=[
-            {"role": "system", "content": f"너는 유능한 {chat_text.role} 분야의 전문가야"},
-            {"role": "user", "content": "한국어로 아래 글을 읽기 쉽게 수정해줘."},
+            {"role": "system", "content": f"너는 유능한 {chat_text.role} 분야의 전문가입니다."},
+            {"role": "user", "content": "한국어로 아래 글을 읽기 쉽게 수정해주세요."},
             {"role": "assistant", "content": f"{chat_text.text}"},
             {"role": "user", "content": f"{chat_text.chat}"}
         ],
@@ -260,6 +261,8 @@ async def chat_gpt(chat_text: Chat_Text):
 
 async def handle_large_text(input_data: Input_Text, process_function: callable, purpose: str = "output"):
     text = input_data.text  # 텍스트 가져오기 리스트
+    print("sasa")
+    print(input_data)
     max_summarize_chars = input_data.max_summarize_chars
     max_chars_per_request = input_data.max_chars_per_request
     output_length = input_data.summary_length
