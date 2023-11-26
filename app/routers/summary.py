@@ -59,6 +59,19 @@ class Problem_Text(BaseModel):
 
 class Input_Text(BaseModel):
     text: List[str]
+    max_summarize_chars: int = 9000
+    max_chars_per_request: int = 4000
+    summary_length: int = 1000
+
+    @validator('text')
+    def validate_text(cls, value):
+        if len(value) == 0:
+            raise ValueError("Text list should not be empty.")
+        return value
+
+
+class Chat_Text(BaseModel):
+    text: List[str]
     chat: str
     role: str = "고등학교"
     max_token: int = 500
@@ -225,7 +238,7 @@ async def extract_table(text: str, max_length: int = 1000):
 
 
 @router.post("/chat_gpt")
-async def chat_gpt(chat_text: Input_Text):
+async def chat_gpt(chat_text: Chat_Text):
     prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
 
     completion = openai.ChatCompletion.create(
