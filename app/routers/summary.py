@@ -158,6 +158,7 @@ async def create_problem(text: str, type: str, problem_count: int):
     response = completion.choices[0].message["content"]
     return response
 
+
 async def check_problem(problem: str, userAnswer: str, impomation: str):
     prompt = f" 문제와 사용자가 제시한 답안을 제공하겠습니다. 추가로 제시한 정보를 통해 정답을 확인해주세요. 맞다면 '정답', 틀렸다면 '오답'을 첫번째 줄에 말해주세요. 해당문제에 대한 '해설:'를 통해 해설해주세요. 문제와 사용자가 제시한 답안입니다. 문제 :{problem}, 답안 :{userAnswer}, 이는 정답확인을 위해 제공하는 정보입니다. 정보 :{impomation} "
     print(prompt)
@@ -178,6 +179,7 @@ async def check_problem(problem: str, userAnswer: str, impomation: str):
     response = completion.choices[0].message["content"]
     print(response)
     return response
+
 
 async def generate_summary_davinci(text: str, max_length: int = 1000):
     response = openai.Completion.create(
@@ -318,15 +320,15 @@ async def handle_large_text_problem(input_data: Input_Text, process_function: ca
     problem, answer = parse_response(final_output_texts)
     return {f"problem": problem, f"answer": answer}
 
+
 async def handle_large_text_problem_check(input_data: Input_Text_Check, process_function: callable, purpose: str = "output"):
     problem = input_data.problem
     userAnswer = input_data.userAnswer
     impomation = input_data.impomation
-    final_output_texts = []
     processed_text = await process_function(problem, userAnswer, impomation)
     print(processed_text)
-    #problem, answer = parse_response(final_output_texts)
-    return {f"problem": problem, f"answer": userAnswer}
+    correctness_status, explanation = parse_response_check(processed_text)
+    return {f"correctness_status": correctness_status, f"explanation": explanation}
 
 def parse_response(response):
     # Extract the first element of the list which is the actual response string
@@ -356,30 +358,28 @@ def parse_response(response):
 
 def parse_response_check(response):
     # Extract the first element of the list which is the actual response string
-    response_str = response[0][0]
-    print(response_str)
-    # Split the response into parts where "문제" indicates a new question
-    parts = response_str.split('오답')
-    parts = response_str.split('정답')
-    print(parts)
-    # Initialize empty lists to hold problems and answers
-    problems = []
-    answers = []
-    for part in parts[1:]:  # The first split is empty so we skip it
-        # Now, we further split each part into problem and answer using "답안:"
-        problem, answer = part.split('\n답안 : ')
-        # Append the problem part to problems list trimming whitespace
-        problem = problem.replace('\n보기:', '')
-        problem = problem.replace('\n보기 :', '')
-        problem = problem.replace('1.', '')
-        problem = problem.replace('2.', '')
-        problem = problem.replace('3.', '')
-        problem = problem.replace('4.', '')
-        problems.append(problem.strip())
-        # Append the answer part to answers list trimming whitespace
-        answers.append(answer.strip())
+    # Split the response into parts based on the line breaks
+    # Initialize variables to hold the correctness status and explanation
+    correctness_status = None
+    explanation = []
+    parts =response.split('\n')
+    # Iterate over the parts to find and extract the required information
+    for part in parts:
+        part = part.strip()  # Preprocess to remove any leading/trailing whitespaces
+        print(f"Checking part: '{part}'")  # Debug print
 
-    return problems, answers
+        # Check if the part indicates correctness status
+        if part.startswith("오답") or part.startswith("정답"):
+            correctness_status = part
+            print(f"Status found '{correctness_status}'")
+
+        # Extract the explanation part after the "해설:" keyword
+        if part.startswith("해설:"):
+            explanation = part.split("해설:")[1].strip()
+            print(f"Explanation found'{explanation}'")
+
+    # Return the correctness status and the explanation as a tuple
+    return correctness_status, explanation
 
 
 
