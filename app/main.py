@@ -8,8 +8,8 @@ import openai
 
 
 class Settings(BaseSettings):
-    OPENAI_API_KEY: str = "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"
-    ## OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY')
+    ## OPENAI_API_KEY: str = "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"
+    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY')
 
 
 settings = Settings()
