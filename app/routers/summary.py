@@ -42,7 +42,7 @@ for doc in subcollection_docs:
     print(f"Head Value: {head_value}")
 
 
-class Input_Text(BaseModel):
+class Problem_Text(BaseModel):
     type: str
     text: List[str]
     problem_count: str = 3
@@ -56,12 +56,8 @@ class Input_Text(BaseModel):
             raise ValueError("Text list should not be empty.")
         return value
 
-class Input_Text_Check(BaseModel):
-    problem: str
-    userAnswer: str
-    impomation : str
 
-class Chat_Text(BaseModel):
+class Input_Text(BaseModel):
     text: List[str]
     chat: str
     role: str = "고등학교"
@@ -72,6 +68,12 @@ class Chat_Text(BaseModel):
         if len(value) == 0:
             raise ValueError("Text list should not be empty.")
         return value
+
+
+class Input_Text_Check(BaseModel):
+    problem: str
+    userAnswer: str
+    impomation : str
 
 
 router = APIRouter()
@@ -181,16 +183,6 @@ async def check_problem(problem: str, userAnswer: str, impomation: str):
     return response
 
 
-async def generate_summary_davinci(text: str, max_length: int = 1000):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=f"summarize the following sentence in Korean : {text}",
-        max_tokens=2000,
-        temperature=1,
-    )
-    summary = response.choices[0].text.strip()
-    return summary
-
 
 async def generate_refine_gpt3(text: str, max_length: int = 1000):
     prompt = f"한국어로 아래 글을 읽기 쉽게 수정해줘. : {text}"
@@ -233,7 +225,7 @@ async def extract_table(text: str, max_length: int = 1000):
 
 
 @router.post("/chat_gpt")
-async def chat_gpt(chat_text: Chat_Text):
+async def chat_gpt(chat_text: Input_Text):
     prompt = f"아래의 글에 대해 답변해줘 {chat_text.chat}"
 
     completion = openai.ChatCompletion.create(
@@ -402,11 +394,6 @@ def word_separate(input_list):
 
     return word, sentence
 
-@router.post("/summarize_large_text_davinci")
-async def summary_large_text_davinci(input_data: Input_Text):
-    result = await handle_large_text(input_data, generate_summary_davinci)  # summarize_large_text 함수를 호출하여 결과를 받아옴
-    return result
-
 
 @router.post("/summarize_large_text_GPT3.5_Turbo")
 async def summary_large_text_turbo(input_data: Input_Text):
@@ -447,7 +434,7 @@ async def word(input_data: Input_Text):
 
 
 @router.post("/problem")
-async def problem(input_data: Input_Text):
+async def problem(input_data: Problem_Text):
     extract_problem = await handle_large_text_problem(input_data, create_problem)
     return extract_problem
 
